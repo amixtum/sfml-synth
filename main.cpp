@@ -7,6 +7,7 @@
 
 #include "Synthesizer.h"
 #include "PhaseModulationStream.h"
+#include "SynthController.h"
 
 int main()
 {
@@ -16,18 +17,22 @@ int main()
 
     while (!controller.isConnected()) {}
 
+    std::cout << "connected succesfully\n";
+
     sf::RenderWindow window(sf::VideoMode(512,512), "Testing Window");
 
     unsigned int sampleRate = 44100;
     unsigned int channelCount = 1;
 
-    PhaseModulationStream mStream;
+    //PhaseModulationStream pmStream;
+    int currentNote = 0;
+    SynthController synth;
 
-    mStream.setCarrierNote(0);
-    mStream.setModulationNote(0);
-    mStream.setModulationIndex(2);
-
-    mStream.play();
+    synth.CreateTestPartitions();
+    //
+    
+    //pmStream.play();
+    //pmStream.setLoop(true);
 
     while (window.isOpen())
     {
@@ -37,15 +42,17 @@ int main()
         {
             if (ev.type == sf::Event::Closed)
                 window.close();
+           
         }
 
         auto frame = controller.frame();
 
-
-
+        synth.playLeapPartitionNote(frame);
+       
         window.clear();
         window.display();
     }
+
 
     return 0;
 }

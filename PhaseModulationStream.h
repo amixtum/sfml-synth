@@ -4,6 +4,7 @@
 #include <SFML/Audio.hpp>
 #include <cmath>
 #include <vector>
+#include "NoteUtils.h"
 
 class PhaseModulationStream : public sf::SoundStream
 {
@@ -94,7 +95,7 @@ public:
 
     void setModulationIndex(float modIndex)
     {
-        modulationIndex = modIndex;
+        modulationIndex = lerp(modulationIndex, modIndex, interpolationSpeed);
     }
 
     void setAmplitude(float amp)
@@ -136,7 +137,7 @@ private:
 
         for (int i = 0; i < chunkSize; ++i)
         {
-            buffer.push_back((short)(amplitude *
+            buffer.push_back((sf::Int16)(amplitude *
                                      SHORT_SCALE *
                                      compute()));
         }
@@ -226,7 +227,7 @@ private:
     float backupAmplitude = 0.5f;
 
     int chunkSize = 1024;
-    std::vector<short> buffer;
+    std::vector<sf::Int16> buffer;
 
     unsigned int channelCount = 1;
     unsigned int sampleRate = 44100;

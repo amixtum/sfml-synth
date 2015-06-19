@@ -9,14 +9,55 @@ class SpacePartition
 public:
     SpacePartition()
     {
-        SpacePartition(xIntervals, yIntervals, zIntervals,
-                       xMin, xMax, yMin, yMax, zMin, zMax);
+        xPartition.reserve(xIntervals);
+        yPartition.reserve(yIntervals);
+        zPartition.reserve(zIntervals);
+
+        float delta_x = (xMax - xMin) / (float)xIntervals;
+        float delta_y = (yMax - yMin) / (float)yIntervals;
+        float delta_z = (zMax - zMin) / (float)zIntervals;
+
+        for (int i = 0; i <= xIntervals; ++i)
+        {
+            xPartition.push_back(xMin + (float)(delta_x * i));
+        }
+        for (int j = 0; j <= yIntervals; ++j)
+        {
+            yPartition.push_back(yMin + (float)(delta_y * j));
+        }
+        for (int k = 0; k <= zIntervals; ++k)
+        {
+            zPartition.push_back(zMin + (float)(delta_z * k));
+        }
+
     }
 
-    SpacePartition(int xIntervals, int yIntervals, int zIntervals)
+    SpacePartition(int xIntervals, int yIntervals, int zIntervals) 
     {
-        SpacePartition(xIntervals, yIntervals, zIntervals,
-                       xMin, xMax, yMin, yMax, zMin, zMax);
+        this->xIntervals = xIntervals;
+        this->yIntervals = yIntervals;
+        this->zIntervals = zIntervals;
+
+        xPartition.reserve(xIntervals);
+        yPartition.reserve(yIntervals);
+        zPartition.reserve(zIntervals);
+
+        float delta_x = (xMax - xMin) / (float)xIntervals;
+        float delta_y = (yMax - yMin) / (float)yIntervals;
+        float delta_z = (zMax - zMin) / (float)zIntervals;
+
+        for (int i = 0; i <= xIntervals; ++i)
+        {
+            xPartition.push_back(xMin + (float)(delta_x * i));
+        }
+        for (int j = 0; j <= yIntervals; ++j)
+        {
+            yPartition.push_back(yMin + (float)(delta_y * j));
+        }
+        for (int k = 0; k <= zIntervals; ++k)
+        {
+            zPartition.push_back(zMin + (float)(delta_z * k));
+        }
     }
 
     SpacePartition(int xIntervals, int yIntervals, int zIntervals,
@@ -55,9 +96,25 @@ public:
         {
             zPartition.push_back(zMin + (float)(delta_z * k));
         }
+
+        std::cout << yPartition.size();
     }
 
-    ~SpacePartition() {}
+
+    int getXSubintervals()
+    {
+        return xPartition.size();
+    }
+
+    int getYSubintervals()
+    {
+        return yPartition.size();
+    }
+
+    int getZSubintervals()
+    {
+        return zPartition.size();
+    }
 
     int getXIndexFromFrame(Leap::Frame &frame, bool useRightHand)
     {
@@ -70,11 +127,13 @@ public:
                 return findX(pos);
             }
         }
+
+        return -1; //error
     }
 
     int getYIndexFromFrame(Leap::Frame &frame, bool useRightHand)
     {
-        for (auto hand : frame.hands())
+        for (Leap::Hand hand : frame.hands())
         {
             if ((useRightHand) ? hand.isRight() :
                                  hand.isLeft())
@@ -83,6 +142,8 @@ public:
                 return findY(pos);
             }
         }
+
+        return -1; //error
     }
 
     int getZIndexFromFrame(Leap::Frame &frame, bool useRightHand)
@@ -96,117 +157,53 @@ public:
                 return findZ(pos);
             }
         }
+
+        return -1; //error
     }
 
     int findX(float xPos)
     {
-        int middle = (int)(xPartition.size() / 2);
-        bool done = false;
-
-        while (!done)
-        {
-            if (xPos > xPartition[middle] && xPos <= xPartition[middle + 1])
-            {
-                done = true;
-            }
-            else if (xPos > xPartition[middle] && xPos > xPartition[middle + 1])
-            {
-                middle = (int)((middle + xPartition.size()) / 2);
-            }
-            else if (xPos < xPartition[middle] && xPos < xPartition[middle - 1])
-            {
-                middle = (int)(middle / 2);
-            }
-            else if (xPos <= xPartition[middle] && xPos > xPartition[middle - 1])
-            {
-                done = true;
-            }
-            else if (xPos == xPartition[middle])
-            {
-                done = true;
-            }
-            else
-            {
-                done = true;
-            }
-        }
-
-        return middle;
+        return find(xPos, 0, xPartition.size() - 1, xPartition, xMin, xMax);
     }
-
+    
     int findY(float yPos)
     {
-        int middle = (int)(yPartition.size() / 2);
-        bool done = false;
-
-        while (!done)
-        {
-            if (yPos > yPartition[middle] && yPos <= yPartition[middle + 1])
-            {
-                done = true;
-            }
-            else if (yPos > yPartition[middle] && yPos > yPartition[middle + 1])
-            {
-                middle = (int)((middle + zPartition.size()) / 2);
-            }
-            else if (yPos < yPartition[middle] && yPos < yPartition[middle - 1])
-            {
-                middle = (int)(middle / 2);
-            }
-            else if (yPos <= yPartition[middle] && yPos > yPartition[middle - 1])
-            {
-                done = true;
-            }
-            else if (yPos == yPartition[middle])
-            {
-                done = true;
-            }
-            else
-            {
-                done = true;
-            }
-        }
-
-        return middle;
+        return find(yPos, 0, yPartition.size() - 1, yPartition, yMin, yMax);
     }
 
     int findZ(float zPos)
     {
-        int middle = (int)(zPartition.size() / 2);
-        bool done = false;
+        return find(zPos, 0, zPartition.size() - 1, zPartition, zMin, zMax);
+    }
 
-        while (!done)
+
+    int find(float pos, int first, int last, std::vector<float> &part, float min, float max)
+    {
+        int index = (int)((first + last) / 2);
+        if (pos < min || pos >= max)
         {
-            if (zPos > zPartition[middle] && zPos <= zPartition[middle + 1])
-            {
-                done = true;
-            }
-            else if (zPos > zPartition[middle] && zPos > zPartition[middle + 1])
-            {
-                middle = (int)((middle + zPartition.size()) / 2);
-            }
-            else if (zPos < zPartition[middle] && zPos < zPartition[middle - 1])
-            {
-                middle = (int)(middle / 2);
-            }
-            else if (zPos <= zPartition[middle] && zPos > zPartition[middle - 1])
-            {
-                done = true;
-            }
-            else if (zPos == zPartition[middle])
-            {
-                done = true;
-            }
-            else
-            {
-                done = true;
-            }
+            return -1;
+        }
+        else if (pos >= part[index] && pos < part[index + 1])
+        {
+            return index;
+        }
+        else if (pos > part[index] && pos > part[index + 1])
+        {
+            return find(pos, index + 1, last, part, min, max); 
+        }
+        else if (pos < part[index])
+        {
+            return find(pos, first, index - 1, part, min, max);
+        }
+        else
+        {
+            return -1;
         }
 
-        return middle;
-    }
+    } 
 private:
-    float yMin = 0;
+    float yMin = 50;
     float yMax = 500;
     float xMin = -300;
     float xMax = 300;
